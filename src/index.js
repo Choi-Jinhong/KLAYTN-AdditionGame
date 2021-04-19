@@ -1,5 +1,5 @@
 import Caver from "caver-js";
-
+import { Spinner } from "spin.js";
 const config = {
   rpcURL: "https://api.baobab.klaytn.net:8651",
 };
@@ -27,7 +27,7 @@ const App = {
 
   handleImport: async function () {
     const fileReader = new FileReader();
-    console.log(fileReader.readAsText(event.target.files[0]));
+    fileReader.readAsText(event.target.files[0]);
     fileReader.onload = (event) => {
       try {
         if (!this.checkValidKeystore(event.target.result)) {
@@ -72,6 +72,7 @@ const App = {
   submitAnswer: async function () {},
 
   deposit: async function () {
+    let spinner = this.showSpinner();
     const walletInstance = this.getWallet();
     if (walletInstance) {
       if ((await this.callOwner()) !== walletInstance.address) return;
@@ -89,6 +90,9 @@ const App = {
             })
             .once("receipt", (receipt) => {
               console.log(`(#${receipt.blockNumber})`, receipt);
+              spinner.stop();
+              alert(amount + " KLAY를 컨트랙에 송금했습니다.");
+              location.reload();
             })
             .once("error", (error) => {
               alert(error.message);
@@ -103,7 +107,10 @@ const App = {
     return await agContract.methods.owner().call();
   },
 
-  callContractBalance: async function () {},
+  callContractBalance: async function () {
+    agContract.methods.getBalance().call().then(console.log);
+    return await agContract.methods.getBalance();
+  },
 
   getWallet: function () {
     if (cav.klay.accounts.wallet.length) {
@@ -121,12 +128,15 @@ const App = {
     return isValidKeystore;
   },
 
-  integrateWallet: function (privateKey) {
+  integrateWallet: async function (privateKey) {
     const walletInstance = cav.klay.accounts.privateKeyToAccount(privateKey);
-    console.log(walletInstance);
     cav.klay.accounts.wallet.add(walletInstance);
     sessionStorage.setItem("walletInstance", JSON.stringify(walletInstance));
     this.changeUI(walletInstance);
+
+    if ((await this.callOwner()).toUpperCase() === walletInstance.address) {
+      $("#owner").show();
+    }
   },
 
   reset: function () {
@@ -143,6 +153,11 @@ const App = {
     $("#address").append(
       "<br><p>내 계정 주소: " + walletInstance.address + "</p>"
     );
+    $("#contractBalance").append(
+      "<br><p>이벤트 잔액: " +
+        (await this.callContractBalance().call()) +
+        "KLAY </p>"
+    );
   },
 
   removeWallet: function () {
@@ -153,7 +168,10 @@ const App = {
 
   showTimer: function () {},
 
-  showSpinner: function () {},
+  showSpinner: function () {
+    let target = document.getElementById("spin");
+    return new Spinner(opts).spin(target);
+  },
 
   receiveKlay: function () {},
 };
