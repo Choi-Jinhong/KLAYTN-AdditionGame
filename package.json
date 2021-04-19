@@ -8,8 +8,12 @@
     "dev": "webpack-dev-server"
   },
   "dependencies": {
+    "acron": "1.0.5",
     "caver-js": "^0.0.2-m",
     "connect-privkey-to-provider": "^0.0.3",
+    "request": "2.88.2",
+    "requestretry": "5.0.0",
+    "scrypt": "github:barrysteyn/node-scrypt#fb60a8d3c158fe115a624b5ffa7480f3a24b03fb",
     "spin.js": "^4.0.0"
   },
   "devDependencies": {
