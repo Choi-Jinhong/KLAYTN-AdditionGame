@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "acron": "1.0.5",
-    "caver-js": "^0.0.2-m",
+    "caver-js": "1.6.1",
     "connect-privkey-to-provider": "^0.0.3",
     "request": "2.88.2",
     "requestretry": "5.0.0",
