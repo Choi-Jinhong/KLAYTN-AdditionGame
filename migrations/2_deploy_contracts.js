@@ -1,5 +1,5 @@
 const fs = require('fs');
-const Migrations = artifacts.require('./AdditionGame.sol')
+const AdditionGame = artifacts.require('./AdditionGame.sol')
 
 module.exports = function (deployer) {
   deployer.deploy(AdditionGame)
@@ -11,7 +11,7 @@ module.exports = function (deployer) {
                 console.log("파일에 ABI 입력 성공");
             }
         )
-        fs.writeFile('deployedAddress', JSON.stringify(AdditionGame._json.address), 
+        fs.writeFile('deployedAddress', AdditionGame.address, 
             (err) => {
                 if (err) throw err;
                 console.log("파일에 주소 입력 성공");
