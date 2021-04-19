@@ -5,21 +5,22 @@ const config = {
 };
 
 const cav = new Caver(config.rpcURL);
+const agContract = new cav.klay.Contract(DEPLOYED_ABI, DEPLOYED_ADDRESS);
 const App = {
   auth: {
-    accessType: 'keystore',
-    keystore: '',
-    password: ''
+    accessType: "keystore",
+    keystore: "",
+    password: "",
   },
 
   start: async function () {
-    const walletFromSession = sessionStorage.getItem('walletInstance');
-    if(walletFromSession) {
+    const walletFromSession = sessionStorage.getItem("walletInstance");
+    if (walletFromSession) {
       try {
         cav.klay.accounts.wallet.add(JSON.parse(walletFromSession));
         this.changeUI(JSON.parse(walletFromSession));
       } catch (error) {
-        sessionStorage.removeItem('walletInstance');
+        sessionStorage.removeItem("walletInstance");
       }
     }
   },
@@ -30,14 +31,14 @@ const App = {
     fileReader.onload = (event) => {
       try {
         if (!this.checkValidKeystore(event.target.result)) {
-          $('#message').text('유효하지 않은 keystore1 파일입니다.');
+          $("#message").text("유효하지 않은 keystore1 파일입니다.");
           return;
         }
         this.auth.keystore = event.target.result;
-        $('#message').text('keystore 통과, 비밀번호를 입력하세요.');
-        document.querySelector('#input-password').focus();
+        $("#message").text("keystore 통과, 비밀번호를 입력하세요.");
+        document.querySelector("#input-password").focus();
       } catch (error) {
-        $('#message').text('유효하지 않은 keystore2 파일입니다.');
+        $("#message").text("유효하지 않은 keystore2 파일입니다.");
         return;
       }
     };
@@ -48,12 +49,15 @@ const App = {
   },
 
   handleLogin: async function () {
-    if(this.auth.accessType === 'keystore'){
+    if (this.auth.accessType === "keystore") {
       try {
-        const privateKey = cav.klay.accounts.decrypt(this.auth.keystore, this.auth.password).privateKey;
+        const privateKey = cav.klay.accounts.decrypt(
+          this.auth.keystore,
+          this.auth.password
+        ).privateKey;
         this.integrateWallet(privateKey);
       } catch (error) {
-        $('#message').text('비밀번호가 일치하지 않습니다.');
+        $("#message").text("비밀번호가 일치하지 않습니다.");
       }
     }
   },
@@ -67,13 +71,45 @@ const App = {
 
   submitAnswer: async function () {},
 
-  deposit: async function () {},
+  deposit: async function () {
+    const walletInstance = this.getWallet();
+    if (walletInstance) {
+      if ((await this.callOwner()) !== walletInstance.address) return;
+      else {
+        let amount = $("#amount").val();
+        if (amount) {
+          agContract.methods.deposit
+            .send({
+              from: walletInstance.address,
+              gas: "250000",
+              value: cav.utils.toPeb(amount, "KLAY"),
+            })
+            .once("transactionHash", (txHash) => {
+              console.log(`txHash: ${txHash}`);
+            })
+            .once("receipt", (receipt) => {
+              console.log(`(#${receipt.blockNumber})`, receipt);
+            })
+            .once("error", (error) => {
+              alert(error.message);
+            });
+          return;
+        }
+      }
+    }
+  },
 
-  callOwner: async function () {},
+  callOwner: async function () {
+    return await agContract.methods.owner().call();
+  },
 
   callContractBalance: async function () {},
 
-  getWallet: function () {},
+  getWallet: function () {
+    if (cav.klay.accounts.wallet.length) {
+      return cav.klay.accounts.wallet[0];
+    }
+  },
 
   checkValidKeystore: function (keystore) {
     const parsedKeystore = JSON.parse(keystore);
@@ -89,27 +125,29 @@ const App = {
     const walletInstance = cav.klay.accounts.privateKeyToAccount(privateKey);
     console.log(walletInstance);
     cav.klay.accounts.wallet.add(walletInstance);
-    sessionStorage.setItem('walletInstance', JSON.stringify(walletInstance));
+    sessionStorage.setItem("walletInstance", JSON.stringify(walletInstance));
     this.changeUI(walletInstance);
   },
 
   reset: function () {
     this.auth = {
-      keystore: '',
-      password: ''
-    }
+      keystore: "",
+      password: "",
+    };
   },
 
   changeUI: async function (walletInstance) {
-    $('#loginModal').modal('hide');
-    $('#login').hide();
-    $('#logout').show();
-    $('#address').append('<br><p>내 계정 주소: ' + walletInstance.address + '</p>');
+    $("#loginModal").modal("hide");
+    $("#login").hide();
+    $("#logout").show();
+    $("#address").append(
+      "<br><p>내 계정 주소: " + walletInstance.address + "</p>"
+    );
   },
 
   removeWallet: function () {
     cav.klay.accounts.wallet.clear();
-    sessionStorage.removeItem('walletInstance');
+    sessionStorage.removeItem("walletInstance");
     this.reset();
   },
 
