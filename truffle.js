@@ -4,7 +4,7 @@ const NETWORK_KEY = "1001";
 const GASLIMIT = "20000000";
 const URL = "https://api.baobab.klaytn.net:8651";
 const PRIVATE_KEY =
-  "0x1992571484fb897b48b3f568c942388b0e78ccc52db528ca4ba377d8feb0449c";
+  "0xe0c3a1d0cd21858b90066639b2b5aad8c0043e9a898e22602f7d6353b3c08999";
 
 module.exports = {
   networks: {
@@ -15,4 +15,9 @@ module.exports = {
       gasPrice: null,
     },
   },
+  compilers: {
+    solc: {
+      version: "0.4.24"
+    }
+  }
 };

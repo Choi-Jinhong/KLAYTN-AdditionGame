@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.4.24;
 
 contract AdditionGame {
     address public owner;
@@ -7,7 +7,7 @@ contract AdditionGame {
         owner = msg.sender;
     }
     
-    function getBalance() public returns (uint) {
+    function getBalance() public view returns (uint) {
         return address(this).balance;
     }
 

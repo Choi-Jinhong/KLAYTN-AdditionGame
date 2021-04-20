@@ -1,11 +1,12 @@
 import Caver from "caver-js";
 import { Spinner } from "spin.js";
+
 const config = {
   rpcURL: "https://api.baobab.klaytn.net:8651",
 };
-
 const cav = new Caver(config.rpcURL);
 const agContract = new cav.klay.Contract(DEPLOYED_ABI, DEPLOYED_ADDRESS);
+
 const App = {
   auth: {
     accessType: "keystore",
@@ -19,7 +20,7 @@ const App = {
       try {
         cav.klay.accounts.wallet.add(JSON.parse(walletFromSession));
         this.changeUI(JSON.parse(walletFromSession));
-      } catch (error) {
+      } catch (e) {
         sessionStorage.removeItem("walletInstance");
       }
     }
@@ -31,14 +32,15 @@ const App = {
     fileReader.onload = (event) => {
       try {
         if (!this.checkValidKeystore(event.target.result)) {
-          $("#message").text("유효하지 않은 keystore1 파일입니다.");
+          console.log("Check");
+          $("#message").text("유효하지 않은 keystore 파일입니다.");
           return;
         }
         this.auth.keystore = event.target.result;
-        $("#message").text("keystore 통과, 비밀번호를 입력하세요.");
+        $("#message").text("keystore 통과. 비밀번호를 입력하세요.");
         document.querySelector("#input-password").focus();
-      } catch (error) {
-        $("#message").text("유효하지 않은 keystore2 파일입니다.");
+      } catch (event) {
+        $("#message").text("유효하지 않은 keystore 파일입니다.");
         return;
       }
     };
@@ -56,7 +58,7 @@ const App = {
           this.auth.password
         ).privateKey;
         this.integrateWallet(privateKey);
-      } catch (error) {
+      } catch (e) {
         $("#message").text("비밀번호가 일치하지 않습니다.");
       }
     }
@@ -72,24 +74,26 @@ const App = {
   submitAnswer: async function () {},
 
   deposit: async function () {
-    let spinner = this.showSpinner();
+    var spinner = this.showSpinner();
     const walletInstance = this.getWallet();
+
     if (walletInstance) {
       if ((await this.callOwner()) !== walletInstance.address) return;
       else {
-        let amount = $("#amount").val();
+        var amount = $("#amount").val();
         if (amount) {
-          agContract.methods.deposit
+          agContract.methods
+            .deposit()
             .send({
               from: walletInstance.address,
-              gas: "250000",
+              gas: "200000",
               value: cav.utils.toPeb(amount, "KLAY"),
             })
             .once("transactionHash", (txHash) => {
               console.log(`txHash: ${txHash}`);
             })
             .once("receipt", (receipt) => {
-              console.log(`(#${receipt.blockNumber})`, receipt);
+              console.log(`(#${receipt.blockNumber})`, receipt); //Received receipt! It means your transaction(calling plus function) is in klaytn block
               spinner.stop();
               alert(amount + " KLAY를 컨트랙에 송금했습니다.");
               location.reload();
@@ -97,8 +101,8 @@ const App = {
             .once("error", (error) => {
               alert(error.message);
             });
-          return;
         }
+        return;
       }
     }
   },
@@ -108,8 +112,8 @@ const App = {
   },
 
   callContractBalance: async function () {
-    agContract.methods.getBalance().call().then(console.log);
-    return await agContract.methods.getBalance();
+    console.log(this.auth.keystore);
+    return await agContract.methods.getBalance().call();
   },
 
   getWallet: function () {
@@ -120,23 +124,21 @@ const App = {
 
   checkValidKeystore: function (keystore) {
     const parsedKeystore = JSON.parse(keystore);
+    console.log(parsedKeystore);
     const isValidKeystore =
       parsedKeystore.version &&
       parsedKeystore.id &&
       parsedKeystore.address &&
       parsedKeystore.keyring;
+
     return isValidKeystore;
   },
 
-  integrateWallet: async function (privateKey) {
+  integrateWallet: function (privateKey) {
     const walletInstance = cav.klay.accounts.privateKeyToAccount(privateKey);
     cav.klay.accounts.wallet.add(walletInstance);
     sessionStorage.setItem("walletInstance", JSON.stringify(walletInstance));
     this.changeUI(walletInstance);
-
-    if ((await this.callOwner()).toUpperCase() === walletInstance.address) {
-      $("#owner").show();
-    }
   },
 
   reset: function () {
@@ -151,13 +153,19 @@ const App = {
     $("#login").hide();
     $("#logout").show();
     $("#address").append(
-      "<br><p>내 계정 주소: " + walletInstance.address + "</p>"
+      "<br>" + "<p>" + "내 계정 주소: " + walletInstance.address + "</p>"
     );
     $("#contractBalance").append(
-      "<br><p>이벤트 잔액: " +
-        (await this.callContractBalance().call()) +
-        "KLAY </p>"
+      "<p>" +
+        "이벤트 잔액: " +
+        cav.utils.fromPeb(await this.callContractBalance(), "KLAY") +
+        " KLAY" +
+        "</p>"
     );
+
+    if ((await this.callOwner()) === walletInstance.address) {
+      $("#owner").show();
+    }
   },
 
   removeWallet: function () {
@@ -169,7 +177,7 @@ const App = {
   showTimer: function () {},
 
   showSpinner: function () {
-    let target = document.getElementById("spin");
+    var target = document.getElementById("spin");
     return new Spinner(opts).spin(target);
   },
 
